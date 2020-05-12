@@ -11,11 +11,23 @@ enum class RADIUS_CODE : uint8_t {
     RESERVED = 255
 };
 
+namespace std {
+    std::string to_string( const RADIUS_CODE &code );
+}
+
 struct Packet {
     RADIUS_CODE code;
     uint8_t id;
     BE16 length;
     std::array<uint8_t,16> authentificator;
+
+    std::string to_string() const {
+        std::string out;
+        out += "Code: " + std::to_string( code );
+        out += " Id: " + std::to_string( id );
+        out += " Length: " + std::to_string( length.native() );
+        return out;
+    }
 }__attribute__((__packed__));
 
 #endif
