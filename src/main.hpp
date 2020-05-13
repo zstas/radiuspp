@@ -15,3 +15,12 @@
 #include "packet.hpp"
 
 using address_v4 = boost::asio::ip::address_v4;
+
+struct RadiusRequest {
+    std::string username;
+    std::string password;
+};
+
+struct RadiusResponse {
+    address_v4 framed_ip;
+};
