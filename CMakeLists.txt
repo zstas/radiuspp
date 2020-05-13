@@ -38,6 +38,7 @@ file(GLOB SOURCES src/*.cpp)
 add_executable(radius++ ${SOURCES})
 
 target_link_libraries(radius++ PUBLIC boost_system)
+target_link_libraries(radius++ PUBLIC boost_random)
 target_link_libraries(radius++ PUBLIC pthread)
 target_link_libraries(radius++ PUBLIC yaml-cpp)
 target_link_libraries(radius++ PUBLIC vapiclient)

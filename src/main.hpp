@@ -9,6 +9,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/asio/ip/address.hpp>
 
+#include "utils.hpp"
 #include "net_integer.hpp"
 #include "radius_avp.hpp"
 #include "radius_dict.hpp"

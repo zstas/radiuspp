@@ -79,7 +79,8 @@ public:
         auto pkt_hdr = reinterpret_cast<Packet*>( pkt.data() );
         pkt_hdr->code = RADIUS_CODE::ACCESS_REQUEST;
         pkt_hdr->id = last_id;
-        pkt_hdr->authentificator = { 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10 };
+        //pkt_hdr->authenticator = { 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10 };
+        pkt_hdr->authenticator = generateAuthenticator();
 
         std::set<AVP> avp_set { 
             AVP { dict, "User-Name", req.username },
@@ -106,34 +107,20 @@ private:
 	udp::endpoint endpoint_;
 };
 
+void on_res( RadiusResponse res ) {
+    std::cout << "Response: " << res.framed_ip.to_string() << std::endl;
+}
+
 int main( int argc, char* argv[] ) {
-    auto main_dict = RadiusDict( "/usr/share/freeradius/dictionary.rfc2865" );    
+    auto main_dict = RadiusDict( "/usr/share/freeradius/dictionary.rfc2865" );
 
-    std::set<AVP> avp_set { 
-        AVP { main_dict, "User-Name", "zstas" },
-        AVP { main_dict, "User-Password", "12345" }
-    };
-
-    for( auto const &avp: avp_set ) {
-        std::cout << printAVP( main_dict, avp ) << std::endl;
-    }
-
-    std::vector<uint8_t> pkt;
-    pkt.resize( sizeof( Packet ) );
-    auto pkt_hdr = reinterpret_cast<Packet*>( pkt.data() );
-    pkt_hdr->code = RADIUS_CODE::ACCESS_REQUEST;
-    pkt_hdr->id = 1;
-    pkt_hdr->authentificator = { 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10 };
-
-    auto seravp = serializeAVP( avp_set );
-    pkt.insert( pkt.end(), seravp.begin(), seravp.end() );
-
-    pkt_hdr = reinterpret_cast<Packet*>( pkt.data() );
-    pkt_hdr->length = pkt.size();
+    RadiusRequest req;
+    req.username = "zstas";
+    req.password = "12345";
 
     io_service io;
     UDPClient udp( io, address_v4::from_string( "127.0.0.1" ), 1812, main_dict );
-    udp.send( pkt );
+    udp.request( req, on_res );
 
     io.run();
 

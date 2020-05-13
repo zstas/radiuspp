@@ -19,7 +19,7 @@ struct Packet {
     RADIUS_CODE code;
     uint8_t id;
     BE16 length;
-    std::array<uint8_t,16> authentificator;
+    authenticator_t authenticator;
 
     std::string to_string() const {
         std::string out;
