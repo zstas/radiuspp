@@ -57,6 +57,7 @@ std::string password_pap_process( const authenticator_t &auth, const std::string
         result.insert( result.end(), c1.begin(), c1.end() );
         b1 = secret;
         b1.insert( b1.end(), c1.begin(), c1.end() );
+        b1 = md5( b1 );
     }
 
     return result;

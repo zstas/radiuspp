@@ -4,6 +4,16 @@ using boost::asio::ip::udp;
 using io_service = boost::asio::io_service;
 using RadiusResponseHandler = std::function<void( RadiusResponse )>;
 
+struct response_t {
+    RadiusResponseHandler response;
+    authenticator_t auth;
+
+    response_t( RadiusResponseHandler r, authenticator_t a ):
+        response( std::move( r ) ),
+        auth( std::move( a ) )
+    {}
+};
+
 std::string std::to_string( const RADIUS_CODE &code ) {
     switch( code ) {
     case RADIUS_CODE::ACCESS_REQUEST:
@@ -53,11 +63,32 @@ public:
         if( ec ) {
             std::cout << ec.message() << std::endl;
         }
+
         RadiusResponse res;
         auto pkt = reinterpret_cast<Packet*>( buf.data() );
         std::cout << pkt->to_string() << std::endl;
 
-        std::vector<uint8_t> avp_buf { buf.begin() + sizeof( Packet), buf.begin() + pkt->length.native() };
+        auto const &it = callbacks.find( pkt->id );
+        if( it == callbacks.end() ) {
+            return;
+        }
+        auto &auth_authenticator = it->second.auth;
+
+        std::vector<uint8_t> avp_buf { buf.begin() + sizeof( Packet ), buf.begin() + pkt->length.native() };
+
+        std::string check { buf.begin(), buf.begin() + 4 };
+        check.reserve( 128 );
+        check.insert( check.end(), auth_authenticator.begin(), auth_authenticator.end() );
+        check.insert( check.end(), avp_buf.begin(), avp_buf.end() );
+        check.insert( check.end(), secret.begin(), secret.end() );
+        auto hash_str = md5( check );
+        std::vector<uint8_t> hash_to_check{ hash_str.begin(), hash_str.end() };
+
+        if( std::equal( pkt->authenticator.begin(), pkt->authenticator.end(), hash_to_check.begin() ) ) {
+            std::cout << "Answer from correct server" << std::endl;
+        } else {
+            std::cout << "Authenticator check failed" << std::endl;
+        }
 
         auto avp_set = parseAVP( avp_buf );
         for( auto const &avp: avp_set ) {
@@ -68,9 +99,8 @@ public:
                 } 
             }
         }
-        if( auto const &it = callbacks.find( pkt->id ); it != callbacks.end() ) {
-            it->second( res );
-        }
+
+        it->second.response( res );
     }
 
     void request( const RadiusRequest &req, RadiusResponseHandler handler ) {
@@ -80,7 +110,6 @@ public:
         auto pkt_hdr = reinterpret_cast<Packet*>( pkt.data() );
         pkt_hdr->code = RADIUS_CODE::ACCESS_REQUEST;
         pkt_hdr->id = last_id;
-        //pkt_hdr->authenticator = { 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10 };
         pkt_hdr->authenticator = generateAuthenticator();
 
         auto encrypted_pass = password_pap_process( pkt_hdr->authenticator, secret, req.password );
@@ -96,7 +125,7 @@ public:
         pkt_hdr = reinterpret_cast<Packet*>( pkt.data() );
         pkt_hdr->length = pkt.size();
 
-        callbacks.emplace( last_id, std::move( handler ) );
+        callbacks.emplace( std::piecewise_construct, std::forward_as_tuple( last_id ), std::forward_as_tuple( std::move( handler ), pkt_hdr->authenticator ) );
         send( pkt );
     }
 
@@ -104,7 +133,7 @@ private:
     RadiusDict dict;
     std::string secret;
     uint8_t last_id;
-    std::map<uint8_t,RadiusResponseHandler> callbacks;
+    std::map<uint8_t,response_t> callbacks;
     std::array<uint8_t,1500> buf;
 	boost::asio::io_service& io_service_;
 	udp::socket socket_;
@@ -120,7 +149,7 @@ int main( int argc, char* argv[] ) {
 
     RadiusRequest req;
     req.username = "zstas";
-    req.password = "12345";
+    req.password = "1234567890123456789012345";
 
     io_service io;
     UDPClient udp( io, address_v4::from_string( "127.0.0.1" ), 1812, "testing123", main_dict );
