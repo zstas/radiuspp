@@ -27,10 +27,11 @@ std::string std::to_string( const RADIUS_CODE &code ) {
 class UDPClient
 {
 public:
-	UDPClient( io_service& io_service, const address_v4& ip_address, uint16_t port, RadiusDict d ): 
+	UDPClient( io_service& io_service, const address_v4& ip_address, uint16_t port, std::string s, RadiusDict d ): 
         io_service_( io_service ), 
         socket_( io_service, udp::endpoint(udp::v4(), 0) ),
         endpoint_( ip_address, port ),
+        secret( std::move( s )),
         dict( std::move( d ) )
     {}
 
@@ -56,14 +57,14 @@ public:
         auto pkt = reinterpret_cast<Packet*>( buf.data() );
         std::cout << pkt->to_string() << std::endl;
 
-        std::vector<uint8_t> avp_buf { buf.begin() + sizeof( Packet), buf.begin() + pkt->length.native() - sizeof( Packet ) };
+        std::vector<uint8_t> avp_buf { buf.begin() + sizeof( Packet), buf.begin() + pkt->length.native() };
 
         auto avp_set = parseAVP( avp_buf );
         for( auto const &avp: avp_set ) {
             auto const &attr = dict.getAttrById( avp.type ); 
             if( attr.first == "Framed-IP-Address" ) {
                 if( auto const &[ ip, success ] = avp.getVal<BE32>(); success ) {
-                    res.framed_ip == address_v4{ ip.native() };
+                    res.framed_ip = address_v4{ ip.native() };
                 } 
             }
         }
@@ -82,9 +83,11 @@ public:
         //pkt_hdr->authenticator = { 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10 };
         pkt_hdr->authenticator = generateAuthenticator();
 
+        auto encrypted_pass = password_pap_process( pkt_hdr->authenticator, secret, req.password );
+
         std::set<AVP> avp_set { 
             AVP { dict, "User-Name", req.username },
-            AVP { dict, "User-Password", req.password }
+            AVP { dict, "User-Password", encrypted_pass }
         };
 
         auto seravp = serializeAVP( avp_set );
@@ -99,6 +102,7 @@ public:
 
 private:
     RadiusDict dict;
+    std::string secret;
     uint8_t last_id;
     std::map<uint8_t,RadiusResponseHandler> callbacks;
     std::array<uint8_t,1500> buf;
@@ -119,7 +123,7 @@ int main( int argc, char* argv[] ) {
     req.password = "12345";
 
     io_service io;
-    UDPClient udp( io, address_v4::from_string( "127.0.0.1" ), 1812, main_dict );
+    UDPClient udp( io, address_v4::from_string( "127.0.0.1" ), 1812, "testing123", main_dict );
     udp.request( req, on_res );
 
     io.run();
