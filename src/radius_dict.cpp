@@ -11,7 +11,8 @@ RadiusDict::RadiusDict( const std::string &path ) {
         if( line.front() == '#' ) {
             continue;
         }
-        if( line.find( "ATTRIBUTE" ) == std::string::npos ) {
+        if( line.find( "ATTRIBUTE" ) == std::string::npos &&
+            line.find( "VALUE") == std::string::npos ) {
             continue;
         }
         std::vector<std::string> out;
@@ -20,29 +21,39 @@ RadiusDict::RadiusDict( const std::string &path ) {
         if( out.size() < 4) {
             continue;
         }
-        uint8_t attr_id = std::stoi( out[2] );
-        RADIUS_TYPE_T type { RADIUS_TYPE_T::ERROR };
-        if( out[ 3 ].find( "string" ) == 0 ) { type = RADIUS_TYPE_T::STRING; }
-        if( out[ 3 ].find( "octets" ) == 0 ) { type = RADIUS_TYPE_T::OCTETS; }
-        if( out[ 3 ].find( "ipaddr" ) == 0 ) { type = RADIUS_TYPE_T::IPADDR; }
-        if( out[ 3 ].find( "integer" ) == 0 ) { type = RADIUS_TYPE_T::INTEGER; }
-        if( out[ 3 ].find( "vsa" ) == 0 ) { type = RADIUS_TYPE_T::VSA; }
-        attrs.emplace( std::piecewise_construct, std::forward_as_tuple( attr_id ), std::forward_as_tuple( out[1], type ) );
+
+        if( out[ 0 ].find( "ATTRIBUTE" ) == 0 ) {
+            uint8_t attr_id = std::stoi( out[ 2 ] );
+            RADIUS_TYPE_T type { RADIUS_TYPE_T::ERROR };
+            if( out[ 3 ].find( "string" ) == 0 ) { type = RADIUS_TYPE_T::STRING; }
+            if( out[ 3 ].find( "octets" ) == 0 ) { type = RADIUS_TYPE_T::OCTETS; }
+            if( out[ 3 ].find( "ipaddr" ) == 0 ) { type = RADIUS_TYPE_T::IPADDR; }
+            if( out[ 3 ].find( "integer" ) == 0 ) { type = RADIUS_TYPE_T::INTEGER; }
+            if( out[ 3 ].find( "vsa" ) == 0 ) { type = RADIUS_TYPE_T::VSA; }
+            attrs.emplace( std::piecewise_construct, std::forward_as_tuple( attr_id ), std::forward_as_tuple( out[1], type ) );
+        } else if( out[ 0 ].find( "VALUE" ) == 0 ) {
+            uint8_t attr_val = std::stoi( out[ 3 ] );
+            for( auto &[ k, v ]: attrs ) {
+                if( out[ 1 ].find( v.name ) == 0 ) {
+                    v.values.emplace( out[ 2 ], attr_val );
+                }
+            }
+        }
     }
 }
 
 uint8_t RadiusDict::getIdByName( const std::string &attr ) const {
     for( auto const &[ k, v ]: attrs ) {
-        if( v.first == attr ) {
+        if( v.name == attr ) {
             return k;
         }
     }
     return 0;
 }
 
-radius_attribute_t RadiusDict::getAttrById( uint8_t id ) const {
+std::pair<std::string,RADIUS_TYPE_T> RadiusDict::getAttrById( uint8_t id ) const {
     if( auto const &it = attrs.find( id ); it != attrs.end() ) {
-        return it->second;
+        return { it->second.name, it->second.type };
     }
     return { {}, RADIUS_TYPE_T::ERROR };
 }

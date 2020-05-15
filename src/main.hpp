@@ -20,6 +20,9 @@ using address_v4 = boost::asio::ip::address_v4;
 struct RadiusRequest {
     std::string username;
     std::string password;
+    std::string nas_id;
+    std::string service_type;
+    std::string framed_protocol;
 };
 
 struct RadiusResponse {

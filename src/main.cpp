@@ -59,9 +59,25 @@ public:
         socket_.async_receive_from( boost::asio::buffer( buf, buf.size() ), endpoint_, std::bind( &UDPClient::on_rcv, this, std::placeholders::_1, std::placeholders::_2 ) );
     }
 
+    // Incoming packet should be in buf
+    bool checkRadiusAnswer( const authenticator_t &req_auth, const authenticator_t &res_auth, const std::vector<uint8_t> &avp ) {
+        std::string check { buf.begin(), buf.begin() + 4 };
+        check.reserve( 128 );
+        check.insert( check.end(), req_auth.begin(), req_auth.end() );
+        check.insert( check.end(), avp.begin(), avp.end() );
+        check.insert( check.end(), secret.begin(), secret.end() );
+        auto hash_str = md5( check );
+        std::vector<uint8_t> hash_to_check{ hash_str.begin(), hash_str.end() };
+
+        if( std::equal( res_auth.begin(), res_auth.end(), hash_to_check.begin() ) ) {
+            return true;
+        } 
+        return false;
+    }
+
     void on_rcv( boost::system::error_code ec, size_t size ) {
         if( ec ) {
-            std::cout << ec.message() << std::endl;
+            std::cerr << ec.message() << std::endl;
         }
 
         RadiusResponse res;
@@ -76,18 +92,9 @@ public:
 
         std::vector<uint8_t> avp_buf { buf.begin() + sizeof( Packet ), buf.begin() + pkt->length.native() };
 
-        std::string check { buf.begin(), buf.begin() + 4 };
-        check.reserve( 128 );
-        check.insert( check.end(), auth_authenticator.begin(), auth_authenticator.end() );
-        check.insert( check.end(), avp_buf.begin(), avp_buf.end() );
-        check.insert( check.end(), secret.begin(), secret.end() );
-        auto hash_str = md5( check );
-        std::vector<uint8_t> hash_to_check{ hash_str.begin(), hash_str.end() };
-
-        if( std::equal( pkt->authenticator.begin(), pkt->authenticator.end(), hash_to_check.begin() ) ) {
-            std::cout << "Answer from correct server" << std::endl;
-        } else {
-            std::cout << "Authenticator check failed" << std::endl;
+        if( !checkRadiusAnswer( it->second.auth, pkt->authenticator, avp_buf ) ) {
+            std::cerr << "Answer is not correct, check the RADIUS secret" << std::endl;
+            return;
         }
 
         auto avp_set = parseAVP( avp_buf );
