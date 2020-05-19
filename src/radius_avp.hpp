@@ -12,7 +12,7 @@ struct AVP {
         length( sizeof( type) + sizeof( length ) + sizeof( v ) )
     {
         type = dict.getIdByName( attr );
-        value.resize( length );
+        value.resize( sizeof( BE32 ) );
         *reinterpret_cast<uint32_t*>( value.data() ) = v.raw();
     }
 
@@ -20,7 +20,7 @@ struct AVP {
         length( sizeof( type) + sizeof( length ) + sizeof( v ) )
     {
         type = dict.getIdByName( attr );
-        value.resize( length );
+        value.resize( sizeof( BE16 ) );
         *reinterpret_cast<uint16_t*>( value.data() ) = v.raw();
     }
 

@@ -1,7 +1,7 @@
 #ifndef AUTH_CLIENT_HPP
 #define AUTH_CLIENT_HPP
 
-using RadiusResponseHandler = std::function<void( RadiusResponse )>;
+using ResponseHandler = std::function<void( std::vector<uint8_t> )>;
 
 template<typename T>
 std::vector<uint8_t> serialize( const RadiusDict &dict, const T &v, const authenticator_t &a, const std::string &secret );
@@ -10,10 +10,10 @@ template<typename T>
 T deserialize( const RadiusDict &dict, std::vector<uint8_t> &v );
 
 struct response_t {
-    RadiusResponseHandler response;
+    ResponseHandler response;
     authenticator_t auth;
 
-    response_t( RadiusResponseHandler r, authenticator_t a ):
+    response_t( ResponseHandler r, authenticator_t a ):
         response( std::move( r ) ),
         auth( std::move( a ) )
     {}
@@ -26,7 +26,7 @@ public:
 	~AuthClient();
 
     template<typename T>
-    void request( const T &req, RadiusResponseHandler handler ) {
+    void request( const T &req, ResponseHandler handler ) {
         last_id++;
         std::vector<uint8_t> pkt;
         pkt.resize( sizeof( Packet ) );
@@ -34,13 +34,13 @@ public:
         pkt_hdr->code = RADIUS_CODE::ACCESS_REQUEST;
         pkt_hdr->id = last_id;
         pkt_hdr->authenticator = generateAuthenticator();
-    
+
         auto seravp = serialize( dict, req, pkt_hdr->authenticator, secret );
         pkt.insert( pkt.end(), seravp.begin(), seravp.end() );
-    
+
         pkt_hdr = reinterpret_cast<Packet*>( pkt.data() );
         pkt_hdr->length = pkt.size();
-    
+
         callbacks.emplace( std::piecewise_construct, std::forward_as_tuple( last_id ), std::forward_as_tuple( std::move( handler ), pkt_hdr->authenticator ) );
         send( pkt );
     }

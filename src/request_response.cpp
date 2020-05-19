@@ -1,4 +1,4 @@
-#include "main.hpp"
+#include "radiuspp.hpp"
 
 template<>
 std::vector<uint8_t> serialize<RadiusRequest>( const RadiusDict &dict, const RadiusRequest &req, const authenticator_t &a, const std::string &secret ) {
@@ -6,6 +6,23 @@ std::vector<uint8_t> serialize<RadiusRequest>( const RadiusDict &dict, const Rad
         AVP { dict, "User-Name", req.username },
         AVP { dict, "User-Password", password_pap_process( a, secret, req.password ) }
     };
+
+    if( !req.nas_id.empty() ) {
+        avp_set.emplace( dict, "NAS-Identifier", req.nas_id );
+    }
+
+    if( !req.framed_protocol.empty() ) {
+        if( auto const &val = dict.getValueByName( "Framed-Protocol", req.framed_protocol ); val != 0 ) {
+            avp_set.emplace( dict, "Framed-Protocol", BE32{ val } );
+        }
+    }
+
+    if( !req.service_type.empty() ) {
+        if( auto const &val = dict.getValueByName( "Service-Type", req.service_type ); val != 0 ) {
+            avp_set.emplace( dict, "Service-Type", BE32{ val } );
+        }
+    }
+
 
     return serializeAVP( avp_set );
 }

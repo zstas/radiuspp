@@ -1,4 +1,4 @@
-#include "main.hpp"
+#include "radiuspp.hpp"
 
 template<>
 std::tuple<std::string, bool> AVP::getVal<std::string>() const {

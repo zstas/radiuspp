@@ -20,7 +20,7 @@ struct radius_attribute_t {
         type( t )
     {}
 
-    std::string getValueString( uint8_t attr_id, int32_t value ) const;
+    std::string getValueString( uint8_t attr_id, int value ) const;
 };
 
 using attributes_t = std::map<uint8_t,radius_attribute_t>;
@@ -30,6 +30,8 @@ public:
     RadiusDict( const std::string &path );
     uint8_t getIdByName( const std::string &attr ) const;
     std::pair<std::string,RADIUS_TYPE_T> getAttrById( uint8_t id ) const;
+
+    int getValueByName( const std::string &attr, const std::string &text ) const;
     
 private:
     attributes_t attrs;

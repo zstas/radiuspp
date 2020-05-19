@@ -1,4 +1,4 @@
-#include "main.hpp"
+#include "radiuspp.hpp"
 
 RadiusDict::RadiusDict( const std::string &path ) {
     std::ifstream file { path };
@@ -58,9 +58,24 @@ std::pair<std::string,RADIUS_TYPE_T> RadiusDict::getAttrById( uint8_t id ) const
     return { {}, RADIUS_TYPE_T::ERROR };
 }
 
-std::string radius_attribute_t::getValueString( uint8_t attr_id, int32_t value ) const {
+std::string radius_attribute_t::getValueString( uint8_t attr_id, int value ) const {
     if( auto const &valIt = values.find( value ); valIt != values.end() ) {
         return valIt->second;
     }
     return {};
+}
+
+int  RadiusDict::getValueByName( const std::string &attr, const std::string &text ) const {
+    for( auto const &[ k, v ]: attrs ) {
+        if( v.name != attr ) {
+            continue;
+        }
+
+        for( auto const &[ index, value ]: v.values ) {
+            if( value == text ) {
+                return index;
+            }
+        }
+    }
+    return 0;
 }

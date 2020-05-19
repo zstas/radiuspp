@@ -56,4 +56,6 @@ private:
 using BE16 = NetInt<uint16_t>;
 using BE32 = NetInt<uint32_t>;
 
+static_assert( sizeof( BE32 ) == 4, "BE32 is not 4 bytes long" );
+
 #endif

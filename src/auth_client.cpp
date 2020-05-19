@@ -1,4 +1,4 @@
-#include "main.hpp"
+#include "radiuspp.hpp"
 
 AuthClient::AuthClient( io_service& i, const address_v4& ip_address, uint16_t port, std::string s, RadiusDict d ): 
     io( i ), 
@@ -60,6 +60,5 @@ void AuthClient::on_rcv( boost::system::error_code ec, size_t size ) {
         return;
     }
 
-    auto res = deserialize<RadiusResponse>( dict, avp_buf );
-    it->second.response( res );
+    it->second.response( std::move( avp_buf ) );
 }
