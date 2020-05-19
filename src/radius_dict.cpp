@@ -32,10 +32,10 @@ RadiusDict::RadiusDict( const std::string &path ) {
             if( out[ 3 ].find( "vsa" ) == 0 ) { type = RADIUS_TYPE_T::VSA; }
             attrs.emplace( std::piecewise_construct, std::forward_as_tuple( attr_id ), std::forward_as_tuple( out[1], type ) );
         } else if( out[ 0 ].find( "VALUE" ) == 0 ) {
-            uint8_t attr_val = std::stoi( out[ 3 ] );
+            int32_t attr_val = std::stoi( out[ 3 ] );
             for( auto &[ k, v ]: attrs ) {
                 if( out[ 1 ].find( v.name ) == 0 ) {
-                    v.values.emplace( out[ 2 ], attr_val );
+                    v.values.emplace( attr_val, out[ 2 ] );
                 }
             }
         }
@@ -56,4 +56,11 @@ std::pair<std::string,RADIUS_TYPE_T> RadiusDict::getAttrById( uint8_t id ) const
         return { it->second.name, it->second.type };
     }
     return { {}, RADIUS_TYPE_T::ERROR };
+}
+
+std::string radius_attribute_t::getValueString( uint8_t attr_id, int32_t value ) const {
+    if( auto const &valIt = values.find( value ); valIt != values.end() ) {
+        return valIt->second;
+    }
+    return {};
 }

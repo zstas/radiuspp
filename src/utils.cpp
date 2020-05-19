@@ -62,3 +62,23 @@ std::string password_pap_process( const authenticator_t &auth, const std::string
 
     return result;
 }
+
+std::string std::to_string( const RADIUS_CODE &code ) {
+    switch( code ) {
+    case RADIUS_CODE::ACCESS_REQUEST:
+        return "ACCESS_REQUEST";
+    case RADIUS_CODE::ACCESS_ACCEPT:
+        return "ACCESS_ACCEPT";
+    case RADIUS_CODE::ACCESS_REJECT:
+        return "ACCESS_REJECT";
+    case RADIUS_CODE::ACCOUNTING_REQUEST:
+        return "ACCOUNTING_REQUEST";
+    case RADIUS_CODE::ACCOUNTING_RESPONSE:
+        return "ACCOUNTING_RESPONSE";
+    case RADIUS_CODE::ACCESS_CHALLENGE:
+        return "ACCESS_CHALLENGE";
+    default:
+        break;
+    }
+    return {};
+}
