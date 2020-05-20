@@ -29,8 +29,8 @@ public:
     void request( const T &req, ResponseHandler handler ) {
         last_id++;
         std::vector<uint8_t> pkt;
-        pkt.resize( sizeof( Packet ) );
-        auto pkt_hdr = reinterpret_cast<Packet*>( pkt.data() );
+        pkt.resize( sizeof( RadiusPacket ) );
+        auto pkt_hdr = reinterpret_cast<RadiusPacket*>( pkt.data() );
         pkt_hdr->code = RADIUS_CODE::ACCESS_REQUEST;
         pkt_hdr->id = last_id;
         pkt_hdr->authenticator = generateAuthenticator();
@@ -38,7 +38,7 @@ public:
         auto seravp = serialize( dict, req, pkt_hdr->authenticator, secret );
         pkt.insert( pkt.end(), seravp.begin(), seravp.end() );
 
-        pkt_hdr = reinterpret_cast<Packet*>( pkt.data() );
+        pkt_hdr = reinterpret_cast<RadiusPacket*>( pkt.data() );
         pkt_hdr->length = pkt.size();
 
         callbacks.emplace( std::piecewise_construct, std::forward_as_tuple( last_id ), std::forward_as_tuple( std::move( handler ), pkt_hdr->authenticator ) );

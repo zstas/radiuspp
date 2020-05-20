@@ -44,7 +44,7 @@ void AuthClient::on_rcv( boost::system::error_code ec, size_t size ) {
         std::cerr << ec.message() << std::endl;
     }
 
-    auto pkt = reinterpret_cast<Packet*>( buf.data() );
+    auto pkt = reinterpret_cast<RadiusPacket*>( buf.data() );
     std::cout << pkt->to_string() << std::endl;
 
     auto const &it = callbacks.find( pkt->id );
@@ -53,7 +53,7 @@ void AuthClient::on_rcv( boost::system::error_code ec, size_t size ) {
     }
     auto &auth_authenticator = it->second.auth;
 
-    std::vector<uint8_t> avp_buf { buf.begin() + sizeof( Packet ), buf.begin() + pkt->length.native() };
+    std::vector<uint8_t> avp_buf { buf.begin() + sizeof( RadiusPacket ), buf.begin() + pkt->length.native() };
 
     if( !checkRadiusAnswer( it->second.auth, pkt->authenticator, avp_buf ) ) {
         std::cerr << "Answer is not correct, check the RADIUS secret" << std::endl;

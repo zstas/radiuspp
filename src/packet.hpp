@@ -15,7 +15,7 @@ namespace std {
     std::string to_string( const RADIUS_CODE &code );
 }
 
-struct Packet {
+struct RadiusPacket {
     RADIUS_CODE code;
     uint8_t id;
     BE16 length;
