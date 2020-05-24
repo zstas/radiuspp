@@ -3,7 +3,7 @@
 
 #include "radius_dict.hpp"
 
-#define VENDOR_SPECIFIC 26
+#define RADIUS_VSA 26
 
 struct AVP {
     uint8_t type;
@@ -45,7 +45,7 @@ struct AVP {
 
         type = *it;
         it++;
-        if( type == VENDOR_SPECIFIC ) {
+        if( type == RADIUS_VSA ) {
             it++; //pass the length
             vendor = bswap( *( reinterpret_cast<uint32_t*>( &( *it ) ) ) );
             it += 4;
