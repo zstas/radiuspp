@@ -3,32 +3,39 @@
 
 #include "radius_dict.hpp"
 
+#define VENDOR_SPECIFIC 26
+
 struct AVP {
     uint8_t type;
     uint8_t length;
     std::vector<uint8_t> value;
+    uint32_t vendor;
 
-    explicit AVP( const RadiusDict &dict, const std::string &attr, BE32 v ):
-        length( sizeof( type) + sizeof( length ) + sizeof( v ) )
-    {
-        type = dict.getIdByName( attr );
+    explicit AVP( const RadiusDict &dict, const std::string &attr, BE32 v ) {
+        auto [ id, vendorid ] = dict.getIdByName( attr );
+        type = id;
+        vendor = vendorid;
         value.resize( sizeof( BE32 ) );
         *reinterpret_cast<uint32_t*>( value.data() ) = v.raw();
+        length = sizeof( type ) + sizeof( length ) + value.size();
     }
 
-    explicit AVP( const RadiusDict &dict, const std::string &attr, BE16 v ):
-        length( sizeof( type) + sizeof( length ) + sizeof( v ) )
-    {
-        type = dict.getIdByName( attr );
+    explicit AVP( const RadiusDict &dict, const std::string &attr, BE16 v ) {
+        auto [ id, vendorid ] = dict.getIdByName( attr );
+        type = id;
+        vendor = vendorid;
         value.resize( sizeof( BE16 ) );
         *reinterpret_cast<uint16_t*>( value.data() ) = v.raw();
+        length = sizeof( type) + sizeof( length ) + value.size();
     }
 
     explicit AVP( const RadiusDict &dict, const std::string &attr, const std::string &s ):
-        length( sizeof( type) + sizeof( length ) + s.size() ),
         value( s.begin(), s.end() )
     {
-        type = dict.getIdByName( attr );
+        auto [ id, vendorid ] = dict.getIdByName( attr );
+        type = id;
+        vendor = vendorid;
+        length = sizeof( type) + sizeof( length ) + value.size();
     }
 
     explicit AVP( const std::vector<uint8_t> &v, std::vector<uint8_t>::iterator it ) {
@@ -38,6 +45,12 @@ struct AVP {
 
         type = *it;
         it++;
+        if( type == VENDOR_SPECIFIC ) {
+            it++; //pass the length
+            vendor = *( reinterpret_cast<uint32_t*>( &( *it ) ) );
+            it += 4;
+            type = *it;
+        }
         length = *it;
         it++;
         value = { it, it + length - 2 };
@@ -56,8 +69,16 @@ struct AVP {
 
     std::vector<uint8_t> serialize() const {
         std::vector<uint8_t> ret;
-        ret.reserve( sizeof( type) + sizeof( length) + length );
-        ret.push_back( type );
+        ret.reserve( sizeof( type ) + sizeof( length ) + length + 10 );
+        if( vendor == 0 ) {
+            ret.push_back( type );
+        } else {
+            ret.push_back( sizeof( type) + sizeof( length ) + sizeof( vendor ) + sizeof( type ) + sizeof( length ) + value.size() );
+            std::array<uint8_t,4> vend_buf;
+            *reinterpret_cast<uint32_t*>( &vend_buf ) = vendor;
+            ret.insert( ret.end(), vend_buf.begin(), vend_buf.end() );
+            ret.push_back( type );
+        }
         ret.push_back( length );
         ret.insert( ret.end(), value.begin(), value.end() );
         return ret;

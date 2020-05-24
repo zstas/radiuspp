@@ -6,11 +6,17 @@ void on_res( const RadiusDict &dict, std::vector<uint8_t> avp ) {
 }
 
 int main( int argc, char* argv[] ) {
-    auto main_dict = RadiusDict( "/usr/share/freeradius/dictionary.rfc2865" );
+    std::vector<std::string> files = {
+        "/usr/share/freeradius/dictionary.rfc2865",
+        "/usr/share/freeradius/dictionary.rfc2869",
+        "/usr/share/freeradius/dictionary.ericsson.ab"
+    };
+
+    auto main_dict = RadiusDict( files );
 
     RadiusRequest req;
-    req.username = "zstas";
-    req.password = "1234567890123456789012345";
+    req.username = "user";
+    req.password = "pass";
     req.nas_id = "vBNG test";
     req.framed_protocol = "PPP";
     req.service_type = "Framed-User";

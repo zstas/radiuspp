@@ -12,13 +12,13 @@ std::vector<uint8_t> serialize<RadiusRequest>( const RadiusDict &dict, const Rad
     }
 
     if( !req.framed_protocol.empty() ) {
-        if( auto const &val = dict.getValueByName( "Framed-Protocol", req.framed_protocol ); val != 0 ) {
+        if( uint32_t val = dict.getValueByName( "Framed-Protocol", req.framed_protocol ); val != 0 ) {
             avp_set.emplace( dict, "Framed-Protocol", BE32{ val } );
         }
     }
 
     if( !req.service_type.empty() ) {
-        if( auto const &val = dict.getValueByName( "Service-Type", req.service_type ); val != 0 ) {
+        if( uint32_t val = dict.getValueByName( "Service-Type", req.service_type ); val != 0 ) {
             avp_set.emplace( dict, "Service-Type", BE32{ val } );
         }
     }
