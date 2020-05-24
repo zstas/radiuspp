@@ -29,7 +29,7 @@ class RadiusDict {
 public:
     RadiusDict( const std::vector<std::string> &files );
     std::tuple<uint8_t,uint32_t> getIdByName( const std::string &attr ) const;
-    std::pair<std::string,RADIUS_TYPE_T> getAttrById( uint8_t id ) const;
+    std::pair<std::string,RADIUS_TYPE_T> getAttrById( uint8_t id, uint32_t vendor = 0 ) const;
 
     int getValueByName( const std::string &attr, const std::string &text ) const;
     

@@ -47,9 +47,10 @@ struct AVP {
         it++;
         if( type == VENDOR_SPECIFIC ) {
             it++; //pass the length
-            vendor = *( reinterpret_cast<uint32_t*>( &( *it ) ) );
+            vendor = bswap( *( reinterpret_cast<uint32_t*>( &( *it ) ) ) );
             it += 4;
             type = *it;
+            it++;
         }
         length = *it;
         it++;

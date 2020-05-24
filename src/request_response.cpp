@@ -23,6 +23,13 @@ std::vector<uint8_t> serialize<RadiusRequest>( const RadiusDict &dict, const Rad
         }
     }
 
+    if( !req.calling_station_id.empty() ) {
+        avp_set.emplace( dict, "Calling-Station-Id", req.calling_station_id );
+    }
+
+    if( !req.nas_port_id.empty() ) {
+        avp_set.emplace( dict, "NAS-Port-Id", req.nas_port_id );
+    }
 
     return serializeAVP( avp_set );
 }
@@ -33,10 +40,18 @@ RadiusResponse deserialize<RadiusResponse>( const RadiusDict &dict, std::vector<
 
     auto avp_set = parseAVP( v );
     for( auto const &avp: avp_set ) {
-        auto const &attr = dict.getAttrById( avp.type ); 
+        auto const &attr = dict.getAttrById( avp.type, avp.vendor ); 
         if( attr.first == "Framed-IP-Address" ) {
             if( auto const &[ ip, success ] = avp.getVal<BE32>(); success ) {
                 res.framed_ip = address_v4{ ip.native() };
+            } 
+        } else if( attr.first == "Client-DNS-Pri" ) {
+            if( auto const &[ ip, success ] = avp.getVal<BE32>(); success ) {
+                res.dns1 = address_v4{ ip.native() };
+            } 
+        } else if( attr.first == "Client-DNS-Sec" ) {
+            if( auto const &[ ip, success ] = avp.getVal<BE32>(); success ) {
+                res.dns2 = address_v4{ ip.native() };
             } 
         }
     }

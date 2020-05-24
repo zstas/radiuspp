@@ -94,9 +94,20 @@ std::tuple<uint8_t,uint32_t> RadiusDict::getIdByName( const std::string &attr ) 
     return { 0, 0 };
 }
 
-std::pair<std::string,RADIUS_TYPE_T> RadiusDict::getAttrById( uint8_t id ) const {
-    if( auto const &it = attrs.find( id ); it != attrs.end() ) {
-        return { it->second.name, it->second.type };
+std::pair<std::string,RADIUS_TYPE_T> RadiusDict::getAttrById( uint8_t id, uint32_t v ) const {
+    if( v == 0 ) {
+        if( auto const &it = attrs.find( id ); it != attrs.end() ) {
+            return { it->second.name, it->second.type };
+        }
+    } else {
+        auto vit = vsa.find( v );
+        if( vit == vsa.end() ) {
+            return { {}, RADIUS_TYPE_T::ERROR };
+        }
+        auto &att = vit->second;
+        if( auto const &it = att.find( id ); it != att.end() ) {
+            return { it->second.name, it->second.type };
+        } 
     }
     return { {}, RADIUS_TYPE_T::ERROR };
 }

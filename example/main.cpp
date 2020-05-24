@@ -2,7 +2,9 @@
 
 void on_res( const RadiusDict &dict, std::vector<uint8_t> avp ) {
     auto res = deserialize<RadiusResponse>( dict, avp );
-    std::cout << "Response: " << res.framed_ip.to_string() << std::endl;
+    std::cout << "Framed-IP: " << res.framed_ip.to_string() << std::endl;
+    std::cout << "DNS1: " << res.dns1.to_string() << std::endl;
+    std::cout << "DNS2: " << res.dns2.to_string() << std::endl;
 }
 
 int main( int argc, char* argv[] ) {
@@ -20,6 +22,8 @@ int main( int argc, char* argv[] ) {
     req.nas_id = "vBNG test";
     req.framed_protocol = "PPP";
     req.service_type = "Framed-User";
+    req.calling_station_id = "00:aa:bb:11:22:33";
+    req.nas_port_id = "vlan200";
 
     io_service io;
     AuthClient udp( io, address_v4::from_string( "127.0.0.1" ), 1812, "testing123", main_dict );
