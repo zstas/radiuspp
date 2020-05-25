@@ -61,4 +61,15 @@ void AuthClient::on_rcv( boost::system::error_code ec, size_t size ) {
     }
 
     it->second.response( std::move( avp_buf ) );
+    callbacks.erase( it );
+}
+
+void AuthClient::expire_check( temp_timer_t timer, boost::system::error_code ec, uint8_t id ) {
+    if( ec ) {
+        std::cerr << "Error on expiring timer: " << ec.message() << std::endl;
+    }
+    if( auto const &it = callbacks.find( id ); it != callbacks.end() ) {
+        it->second.error( "Timeout for this radius request" );
+        callbacks.erase( it );
+    }
 }

@@ -7,6 +7,10 @@ void on_res( const RadiusDict &dict, std::vector<uint8_t> avp ) {
     std::cout << "DNS2: " << res.dns2.to_string() << std::endl;
 }
 
+void on_err( const std::string &err ) {
+    std::cout << "Error: " << err << std::endl;
+}
+
 int main( int argc, char* argv[] ) {
     std::vector<std::string> files = {
         "/usr/share/freeradius/dictionary.rfc2865",
@@ -27,7 +31,7 @@ int main( int argc, char* argv[] ) {
 
     io_service io;
     AuthClient udp( io, address_v4::from_string( "127.0.0.1" ), 1812, "testing123", main_dict );
-    udp.request<RadiusRequest>( req, std::bind( on_res, main_dict, std::placeholders::_1 ) );
+    udp.request<RadiusRequest>( req, std::bind( on_res, main_dict, std::placeholders::_1 ), on_err );
 
     io.run();
 

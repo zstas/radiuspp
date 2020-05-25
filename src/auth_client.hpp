@@ -2,6 +2,7 @@
 #define AUTH_CLIENT_HPP
 
 using ResponseHandler = std::function<void( std::vector<uint8_t> )>;
+using ErrorHandler = std::function<void( std::string )>;
 
 template<typename T>
 std::vector<uint8_t> serialize( const RadiusDict &dict, const T &v, const authenticator_t &a, const std::string &secret );
@@ -11,10 +12,12 @@ T deserialize( const RadiusDict &dict, std::vector<uint8_t> &v );
 
 struct response_t {
     ResponseHandler response;
+    ErrorHandler error;
     authenticator_t auth;
 
-    response_t( ResponseHandler r, authenticator_t a ):
+    response_t( ResponseHandler r, ErrorHandler t, authenticator_t a ):
         response( std::move( r ) ),
+        error( std::move( t ) ),
         auth( std::move( a ) )
     {}
 };
@@ -26,7 +29,7 @@ public:
 	~AuthClient();
 
     template<typename T>
-    void request( const T &req, ResponseHandler handler ) {
+    void request( const T &req, ResponseHandler handler, ErrorHandler error ) {
         last_id++;
         std::vector<uint8_t> pkt;
         pkt.resize( sizeof( RadiusPacket ) );
@@ -41,11 +44,15 @@ public:
         pkt_hdr = reinterpret_cast<RadiusPacket*>( pkt.data() );
         pkt_hdr->length = pkt.size();
 
-        callbacks.emplace( std::piecewise_construct, std::forward_as_tuple( last_id ), std::forward_as_tuple( std::move( handler ), pkt_hdr->authenticator ) );
+        callbacks.emplace( std::piecewise_construct, std::forward_as_tuple( last_id ), std::forward_as_tuple( std::move( handler ), std::move( error ), pkt_hdr->authenticator ) );
+        temp_timer_t timer = std::make_shared<temp_timer_t::element_type>( io );
+        timer->expires_from_now( std::chrono::seconds( 5 ) );
+        timer->async_wait( std::bind( &AuthClient::expire_check, this, timer, std::placeholders::_1, last_id ) );
         send( pkt );
     }
 
 private:
+    void expire_check( temp_timer_t timer, boost::system::error_code ec, uint8_t id );
     void on_rcv( boost::system::error_code ec, size_t size );
     bool checkRadiusAnswer( const authenticator_t &req_auth, const authenticator_t &res_auth, const std::vector<uint8_t> &avp );
 	void send( const std::vector<uint8_t> &msg );
