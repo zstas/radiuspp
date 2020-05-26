@@ -41,7 +41,8 @@ bool AuthClient::checkRadiusAnswer( const authenticator_t &req_auth, const authe
 
 void AuthClient::on_rcv( boost::system::error_code ec, size_t size ) {
     if( ec ) {
-        std::cerr << ec.message() << std::endl;
+        std::cerr << "Socket receive: " << ec.message() << std::endl;
+        return;
     }
 
     auto pkt = reinterpret_cast<RadiusPacket*>( buf.data() );
@@ -61,15 +62,24 @@ void AuthClient::on_rcv( boost::system::error_code ec, size_t size ) {
     }
 
     it->second.response( std::move( avp_buf ) );
-    callbacks.erase( it );
+    it->second.timer.cancel();
 }
 
-void AuthClient::expire_check( temp_timer_t timer, boost::system::error_code ec, uint8_t id ) {
+void AuthClient::expire_check( boost::system::error_code ec, uint8_t id ) {
+    auto const &it = callbacks.find( id );
     if( ec ) {
-        std::cerr << "Error on expiring timer: " << ec.message() << std::endl;
+        if( ec != boost::system::errc::operation_canceled ) {
+            std::cerr << "Error on expiring timer: " << ec.message() << std::endl;
+        }
+    } else {
+        if( it != callbacks.end() ) {
+            it->second.error( "Timeout for this radius request" );
+        }
     }
-    if( auto const &it = callbacks.find( id ); it != callbacks.end() ) {
-        it->second.error( "Timeout for this radius request" );
+    if( it != callbacks.end() ) {
         callbacks.erase( it );
+    }
+    if( callbacks.empty() ) {
+        socket.cancel();
     }
 }

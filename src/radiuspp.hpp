@@ -12,7 +12,6 @@
 using boost::asio::ip::udp;
 using address_v4 = boost::asio::ip::address_v4;
 using io_service = boost::asio::io_service;
-using temp_timer_t = std::shared_ptr<boost::asio::steady_timer>;
 
 #include "utils.hpp"
 #include "net_integer.hpp"
