@@ -61,7 +61,7 @@ void AuthClient::on_rcv( boost::system::error_code ec, size_t size ) {
         return;
     }
 
-    it->second.response( std::move( avp_buf ) );
+    it->second.response( pkt->code, std::move( avp_buf ) );
     it->second.timer.cancel();
 }
 

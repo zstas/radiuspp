@@ -1,7 +1,7 @@
 #ifndef AUTH_CLIENT_HPP
 #define AUTH_CLIENT_HPP
 
-using ResponseHandler = std::function<void( std::vector<uint8_t> )>;
+using ResponseHandler = std::function<void( RADIUS_CODE, std::vector<uint8_t> )>;
 using ErrorHandler = std::function<void( std::string )>;
 
 template<typename T>

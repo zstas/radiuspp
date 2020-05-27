@@ -1,6 +1,11 @@
 #include "radiuspp.hpp"
 
-void on_res( const RadiusDict &dict, std::vector<uint8_t> avp ) {
+void on_res( const RadiusDict &dict, RADIUS_CODE code, std::vector<uint8_t> avp ) {
+    if( code == RADIUS_CODE::ACCESS_REJECT ) {
+        std::cout << "Request rejected!" << std::endl;
+    } else if( code == RADIUS_CODE::ACCESS_ACCEPT ) {
+        std::cout << "Request accepted!" << std::endl;
+    }
     auto res = deserialize<RadiusResponse>( dict, avp );
     std::cout << "Framed-IP: " << res.framed_ip.to_string() << std::endl;
     std::cout << "DNS1: " << res.dns1.to_string() << std::endl;
@@ -31,7 +36,7 @@ int main( int argc, char* argv[] ) {
 
     io_service io;
     AuthClient udp( io, address_v4::from_string( "127.0.0.1" ), 1812, "testing123", main_dict );
-    udp.request<RadiusRequest>( req, std::bind( on_res, main_dict, std::placeholders::_1 ), on_err );
+    udp.request<RadiusRequest>( req, std::bind( on_res, main_dict, std::placeholders::_1, std::placeholders::_2 ), on_err );
 
     io.run();
 
