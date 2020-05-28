@@ -68,14 +68,15 @@ public:
         auto pkt_hdr = reinterpret_cast<RadiusPacket*>( pkt.data() );
         pkt_hdr->code = RADIUS_CODE::ACCOUNTING_REQUEST;
         pkt_hdr->id = last_id;
-        // TODO: fix authenticator
-        pkt_hdr->authenticator = generateAuthenticator();
 
         auto seravp = serialize( dict, req, pkt_hdr->authenticator, secret );
         pkt.insert( pkt.end(), seravp.begin(), seravp.end() );
 
         pkt_hdr = reinterpret_cast<RadiusPacket*>( pkt.data() );
         pkt_hdr->length = pkt.size();
+
+        auto temp = acct_auth_process( pkt, seravp, secret );
+        std::copy( temp.begin(), temp.end(), pkt_hdr->authenticator.begin() );
 
         if( auto const &[ it, success ] = callbacks.emplace( 
             std::piecewise_construct, 

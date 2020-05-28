@@ -63,6 +63,15 @@ std::string password_pap_process( const authenticator_t &auth, const std::string
     return result;
 }
 
+std::string acct_auth_process( const std::vector<uint8_t> &pkt, const std::vector<uint8_t> req_attrs, const std::string &secret ) {
+    std::string check { pkt.begin(), pkt.begin() + 4 };
+    check.reserve( 128 );
+    check.insert( check.end(), 16, 0 );
+    check.insert( check.end(), req_attrs.begin(), req_attrs.end() );
+    check.insert( check.end(), secret.begin(), secret.end() );
+    return md5( check );
+}
+
 std::string std::to_string( const RADIUS_CODE &code ) {
     switch( code ) {
     case RADIUS_CODE::ACCESS_REQUEST:
