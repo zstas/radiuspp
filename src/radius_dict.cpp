@@ -119,7 +119,7 @@ std::string radius_attribute_t::getValueString( uint8_t attr_id, int value ) con
     return {};
 }
 
-int  RadiusDict::getValueByName( const std::string &attr, const std::string &text ) const {
+int RadiusDict::getValueByName( const std::string &attr, const std::string &text ) const {
     for( auto const &[ k, v ]: attrs ) {
         if( v.name != attr ) {
             continue;

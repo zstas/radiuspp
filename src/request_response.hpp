@@ -17,4 +17,18 @@ struct RadiusResponse {
     address_v4 dns2;
 };
 
+struct AcctRequest {
+    std::string username;
+    std::string nas_id;
+    std::string nas_port_id;
+    std::string acct_status_type;
+    std::string calling_station_id;
+    uint32_t in_pkts;
+    uint32_t out_pkts;
+};
+
+struct AcctResponse {
+
+};
+
 #endif

@@ -60,6 +60,37 @@ public:
         send( pkt );
     }
 
+    template<typename T>
+    void acct_request( const T &req, ResponseHandler handler, ErrorHandler error ) {
+        last_id++;
+        std::vector<uint8_t> pkt;
+        pkt.resize( sizeof( RadiusPacket ) );
+        auto pkt_hdr = reinterpret_cast<RadiusPacket*>( pkt.data() );
+        pkt_hdr->code = RADIUS_CODE::ACCOUNTING_REQUEST;
+        pkt_hdr->id = last_id;
+        // TODO: fix authenticator
+        pkt_hdr->authenticator = generateAuthenticator();
+
+        auto seravp = serialize( dict, req, pkt_hdr->authenticator, secret );
+        pkt.insert( pkt.end(), seravp.begin(), seravp.end() );
+
+        pkt_hdr = reinterpret_cast<RadiusPacket*>( pkt.data() );
+        pkt_hdr->length = pkt.size();
+
+        if( auto const &[ it, success ] = callbacks.emplace( 
+            std::piecewise_construct, 
+            std::forward_as_tuple( last_id ), 
+            std::forward_as_tuple( io, std::move( handler ), std::move( error ), pkt_hdr->authenticator ) 
+        ); success ) {
+            it->second.timer.expires_from_now( std::chrono::seconds( 5 ) );
+            it->second.timer.async_wait( std::bind( &AuthClient::expire_check, this, std::placeholders::_1, last_id ) );
+        } else {
+            std::cerr << "Error on emplacing new callback" << std::endl;
+            return;
+        }
+        send( pkt );
+    }
+
 private:
     void expire_check( boost::system::error_code ec, uint8_t id );
     void on_rcv( boost::system::error_code ec, size_t size );

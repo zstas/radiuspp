@@ -29,12 +29,16 @@ struct AVP {
         length = sizeof( type) + sizeof( length ) + value.size();
     }
 
-    explicit AVP( const RadiusDict &dict, const std::string &attr, const std::string &s ):
-        value( s.begin(), s.end() )
-    {
+    explicit AVP( const RadiusDict &dict, const std::string &attr, const std::string &s ) {
         auto [ id, vendorid ] = dict.getIdByName( attr );
         type = id;
         vendor = vendorid;
+        if( uint32_t i = dict.getValueByName( attr, s ); i != 0 ) {
+            value.resize( sizeof( BE32 ) );
+            *reinterpret_cast<uint32_t*>( value.data() ) = BE32( i ).raw();    
+        } else {
+            value = { s.begin(), s.end() };
+        }
         length = sizeof( type) + sizeof( length ) + value.size();
     }
 
